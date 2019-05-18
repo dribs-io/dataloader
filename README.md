@@ -5,16 +5,16 @@
 This is an implementation of [Facebook's DataLoader](https://github.com/facebook/dataloader) in Golang.
 
 ## Install
-`go get -u github.com/graph-gophers/dataloader`
+`go get -u go.dribs.io/dataloader`
 
 ## Usage
 ```go
 // setup batch function
-batchFn := func(ctx context.Context, keys dataloader.Keys) []*dataloader.Result {
+batchFn := func(ctx context.Context, keys dataloader.Keys) ([]*dataloader.Result, error) {
   var results []*dataloader.Result
   // do some aync work to get data for specified keys
   // append to this list resolved values
-  return results
+  return results, nil
 }
 
 // create Loader with an in-memory cache
@@ -35,9 +35,6 @@ if err != nil {
 
 log.Printf("value: %#v", result)
 ```
-
-### Don't need/want to use context?
-You're welcome to install the v1 version of this library.
 
 ## Cache
 This implementation contains a very basic cache that is intended only to be used for short lived DataLoaders (i.e. DataLoaders that ony exsist for the life of an http request). You may use your own implementation if you want.

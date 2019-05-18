@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/nicksrandall/dataloader"
+	"go.dribs.io/dataloader"
 )
 
 // Cache implements the dataloader.Cache interface
@@ -58,11 +58,11 @@ func main() {
 	fmt.Printf("identity: %s\n", result)
 }
 
-func batchFunc(_ context.Context, keys dataloader.Keys) []*dataloader.Result {
+func batchFunc(_ context.Context, keys dataloader.Keys) ([]*dataloader.Result, error) {
 	var results []*dataloader.Result
 	// do some pretend work to resolve keys
 	for _, key := range keys {
 		results = append(results, &dataloader.Result{key.String(), nil})
 	}
-	return results
+	return results, nil
 }

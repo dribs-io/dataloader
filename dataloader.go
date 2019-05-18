@@ -27,11 +27,12 @@ type Interface interface {
 	Prime(ctx context.Context, key Key, value interface{}) Interface
 }
 
-// BatchFunc is a function, which when given a slice of keys (string), returns a slice of `results`.
+// BatchFunc is a function, which when given a slice of keys (string), returns an slice of `results`.
 // It's important that the length of the input keys matches the length of the output results.
 //
 // The keys passed to this function are guaranteed to be unique
-type BatchFunc func(context.Context, Keys) []*Result
+// Returning error saying the whole batch errored.
+type BatchFunc func(context.Context, Keys) ([]*Result, error)
 
 // Result is the data structure that a BatchFunc returns.
 // It contains the resolved data, and any errors that may have occurred while fetching the data.
@@ -405,6 +406,7 @@ func (b *batcher) batch(originalContext context.Context) {
 		keys     = make(Keys, 0)
 		reqs     = make([]*batchRequest, 0)
 		items    = make([]*Result, 0)
+		err      error // indicating error for whole batch
 		panicErr interface{}
 	)
 
@@ -429,12 +431,21 @@ func (b *batcher) batch(originalContext context.Context) {
 				log.Printf("Dataloader: Panic received in batch function:: %v\n%s", panicErr, buf)
 			}
 		}()
-		items = b.batchFn(ctx, keys)
+		items, err = b.batchFn(ctx, keys)
 	}()
 
 	if panicErr != nil {
 		for _, req := range reqs {
 			req.channel <- &Result{Error: fmt.Errorf("Panic received in batch function: %v", panicErr)}
+			close(req.channel)
+		}
+		return
+	}
+
+	if err != nil {
+		err := &Result{Error: err}
+		for _, req := range reqs {
+			req.channel <- err
 			close(req.channel)
 		}
 		return
